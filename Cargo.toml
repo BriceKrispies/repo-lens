@@ -1,0 +1,32 @@
+[workspace]
+members = [
+    "crates/rl_api",
+    "crates/rl_git",
+    "crates/rl_index",
+    "crates/rl_core",
+    "crates/rl_ipc",
+    "crates/rl_cli",
+    "crates/rl_bench",
+    "crates/rl_fixtures",
+]
+resolver = "2"
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+authors = ["repo-lens contributors"]
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/your-org/repo-lens"
+description = "High-performance Git UI backend built in Rust"
+
+[workspace.dependencies]
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+thiserror = "1.0"
+clap = { version = "4.0", features = ["derive"] }
+tokio = { version = "1.0", features = ["rt", "rt-multi-thread", "macros", "io-util", "sync", "process"] }
+criterion = { version = "0.5", features = ["html_reports"] }
+
+[workspace.lints.clippy]
+print_stdout = "deny"
+print_stderr = "deny"

@@ -1,0 +1,16 @@
+[package]
+name = "rl_ipc"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Transport layer for repo-lens engine with JSON-RPC over stdio"
+
+[dependencies]
+rl_core = { path = "../rl_core" }
+rl_api = { path = "../rl_api" }
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+tokio.workspace = true

@@ -1,0 +1,432 @@
+{
+    "meta": {
+      "name": "repo-lens",
+      "description": "High-performance Git UI backend + CLI (and later desktop UI) built in Rust. Core provides cancelable, incremental, testable Git queries via a stable API contract.",
+      "language": "Rust",
+      "repo_style": "Rust workspace (multi-crate)",
+      "system_map_version": "0.1.0"
+    },
+    "goals": [
+      "Support main Git operations with no UX/perf compromises",
+      "Backend-first: engine + stable typed API contract + CLI",
+      "Incremental, cancelable queries; streaming for heavy results",
+      "Mechanical correctness + performance regression testing"
+    ],
+    "non_goals_initial": [
+      "Full-feature parity with every obscure git subcommand on day 1",
+      "Network hosting / multi-user server",
+      "Plugin ecosystem before core stability"
+    ],
+    "quality_attributes": {
+      "performance": {
+        "principles": [
+          "Avoid repo-wide recomputation on UI interactions",
+          "Prefer incremental updates and bounded caches",
+          "Stream large payloads; paginate lists",
+          "Cancel in-flight work on new user intent"
+        ],
+        "budgets_initial": {
+          "status_warm_p95_ms": 50,
+          "log_page_warm_p95_ms": 80,
+          "diff_summary_warm_p95_ms": 120
+        }
+      },
+      "correctness": {
+        "principles": [
+          "Cross-check against canonical git behavior (golden tests)",
+          "Property/fuzz tests across synthetic repos and edge cases",
+          "Stable deterministic outputs for API contract"
+        ]
+      },
+      "ux_contract": {
+        "principles": [
+          "Stable typed DTOs for UI consumption",
+          "IDs are stable (OIDs/SHAs + view-specific ids)",
+          "Event-driven updates via watch stream"
+        ]
+      }
+    },
+    "workspace_layout": {
+      "crates": {
+        "rl_core": {
+          "kind": "library",
+          "purpose": "Pure repo engine: query planning, cancellation, scheduling, caching coordination. No CLI/IPC/UI deps.",
+          "depends_on": ["rl_git", "rl_api", "rl_index"],
+          "exports": [
+            "RepoEngine",
+            "RepoHandle",
+            "QueryExecutor",
+            "CancellationToken",
+            "Scheduler",
+            "EngineConfig"
+          ]
+        },
+        "rl_git": {
+          "kind": "library",
+          "purpose": "Git plumbing adapter layer. Abstracts implementation (libgit2/gitoxide/subprocess). Provides object/refs/index/worktree access.",
+          "depends_on": [],
+          "exports": [
+            "GitBackend",
+            "RepoSnapshot",
+            "ObjectStore",
+            "RefsStore",
+            "Workdir",
+            "IndexReader"
+          ]
+        },
+        "rl_index": {
+          "kind": "library",
+          "purpose": "Bounded caches and incremental indices (commit graph windowing, path tree snapshots, diff/blame chunk caches). Optional but first-class.",
+          "depends_on": ["rl_git"],
+          "exports": [
+            "IndexManager",
+            "CachePolicy",
+            "CommitGraphCache",
+            "TreeCache",
+            "DiffCache",
+            "BlameCache"
+          ]
+        },
+        "rl_api": {
+          "kind": "library",
+          "purpose": "Typed request/response DTOs (the UI contract). Versioned, deterministic serialization. Also shared error model.",
+          "depends_on": [],
+          "exports": [
+            "ApiVersion",
+            "Request",
+            "Response",
+            "Event",
+            "Error",
+            "Paging",
+            "Streaming"
+          ]
+        },
+        "rl_ipc": {
+          "kind": "library",
+          "purpose": "Transport layer for engine: JSON-RPC over stdio (initial) and/or local socket. Maps rl_api messages to rl_core calls.",
+          "depends_on": ["rl_core", "rl_api"],
+          "exports": [
+            "IpcServer",
+            "IpcClient",
+            "TransportConfig"
+          ]
+        },
+        "rl_cli": {
+          "kind": "binary",
+          "purpose": "Thin CLI mapping subcommands to rl_api requests; prints JSON by default; supports watch + benchmarks.",
+          "depends_on": ["rl_core", "rl_api", "rl_ipc"],
+          "bin_names": ["repo-lens"]
+        },
+        "rl_bench": {
+          "kind": "binary",
+          "purpose": "Bench harness + datasets manifest runner. Produces perf reports and enforces budgets in CI.",
+          "depends_on": ["rl_core", "rl_api"],
+          "bin_names": ["repo-lens-bench"]
+        },
+        "rl_fixtures": {
+          "kind": "library",
+          "purpose": "Test-only helpers to generate repos and edge cases (renames, merges, conflicts, large files).",
+          "depends_on": [],
+          "test_only": true
+        }
+      },
+      "apps": {
+        "desktop": {
+          "kind": "app",
+          "purpose": "Future GUI (e.g., Tauri). Consumes rl_api over rl_ipc. Not required for backend milestones.",
+          "status": "planned"
+        }
+      },
+      "docs": {
+        "contracts": "API shapes, versioning policy, and per-query perf expectations",
+        "decisions": "Short ADRs for major architectural choices",
+        "benchmarks": "How to run and interpret perf tests"
+      }
+    },
+    "domain_model": {
+      "concepts": [
+        {
+          "name": "RepoEngine",
+          "description": "Long-lived engine instance managing a repository, caches, scheduling, and watchers."
+        },
+        {
+          "name": "RepoSnapshot",
+          "description": "Immutable view of refs/index/workdir state used to answer queries consistently."
+        },
+        {
+          "name": "Query",
+          "description": "Typed request that can be paged/streamed/cancelable; produces deterministic responses."
+        },
+        {
+          "name": "EventStream",
+          "description": "Typed events for changes in refs/index/workdir enabling reactive UIs."
+        }
+      ],
+      "identifiers": {
+        "git_oids": ["CommitId", "TreeId", "BlobId"],
+        "stable_view_ids": ["CommitRowId", "FileNodeId", "DiffHunkId", "BlameChunkId"]
+      }
+    },
+    "api_contract": {
+      "versioning": {
+        "current": "v0",
+        "policy": "Additive changes are allowed within v0; breaking changes require bump to v1 and parallel support during transition."
+      },
+      "requests": [
+        {
+          "name": "Status",
+          "features": ["fast_path", "cancelable"],
+          "response": "StatusView"
+        },
+        {
+          "name": "Log",
+          "features": ["paged", "cancelable"],
+          "response": "CommitListPage"
+        },
+        {
+          "name": "Graph",
+          "features": ["paged", "cancelable"],
+          "response": "CommitGraphWindow"
+        },
+        {
+          "name": "ShowCommit",
+          "features": ["cancelable"],
+          "response": "CommitDetails"
+        },
+        {
+          "name": "DiffSummary",
+          "features": ["cancelable"],
+          "response": "DiffSummary"
+        },
+        {
+          "name": "DiffContent",
+          "features": ["streamed", "cancelable"],
+          "response": "DiffChunkStream"
+        },
+        {
+          "name": "Blame",
+          "features": ["streamed", "cancelable"],
+          "response": "BlameChunkStream"
+        },
+        {
+          "name": "Branches",
+          "features": ["cancelable"],
+          "response": "BranchList"
+        },
+        {
+          "name": "Tags",
+          "features": ["cancelable"],
+          "response": "TagList"
+        },
+        {
+          "name": "Remotes",
+          "features": ["cancelable"],
+          "response": "RemoteList"
+        },
+        {
+          "name": "Checkout",
+          "features": ["mutating", "cancelable"],
+          "response": "OperationResult"
+        },
+        {
+          "name": "Commit",
+          "features": ["mutating", "cancelable"],
+          "response": "OperationResult"
+        },
+        {
+          "name": "Fetch",
+          "features": ["mutating", "streamed", "cancelable"],
+          "response": "ProgressStream"
+        },
+        {
+          "name": "Push",
+          "features": ["mutating", "streamed", "cancelable"],
+          "response": "ProgressStream"
+        },
+        {
+          "name": "Merge",
+          "features": ["mutating", "plan_apply", "cancelable"],
+          "response": "MergeResult"
+        },
+        {
+          "name": "Rebase",
+          "features": ["mutating", "plan_apply", "cancelable"],
+          "response": "RebaseResult"
+        },
+        {
+          "name": "Stash",
+          "features": ["mutating", "cancelable"],
+          "response": "OperationResult"
+        },
+        {
+          "name": "Watch",
+          "features": ["event_stream"],
+          "response": "EventStream"
+        }
+      ],
+      "events": [
+        "HeadChanged",
+        "IndexChanged",
+        "WorkdirChanged",
+        "RefsChanged",
+        "RepoOpened",
+        "RepoClosed",
+        "OperationProgress"
+      ],
+      "errors": {
+        "model": "Typed error codes + human message + optional remediation hints",
+        "categories": [
+          "InvalidRequest",
+          "RepoNotFound",
+          "GitBackendError",
+          "Conflict",
+          "AuthRequired",
+          "OperationCanceled",
+          "Timeout",
+          "Internal"
+        ]
+      }
+    },
+    "execution_model": {
+      "scheduler": {
+        "priorities": ["ui_immediate", "ui_prefetch", "maintenance"],
+        "rules": [
+          "New UI intent cancels superseded queries",
+          "Maintenance work yields to UI work immediately",
+          "Backpressure for streaming endpoints"
+        ]
+      },
+      "cancellation": {
+        "mechanism": "CancellationToken propagated through rl_core -> rl_git -> index operations",
+        "guarantee": "Cancellation is enforced at known checkpoints and on IO boundaries"
+      },
+      "streaming": {
+        "mechanism": "Chunked responses with sequence numbers; resumable via cursor where possible"
+      }
+    },
+    "storage_and_caching": {
+      "cache_policy": {
+        "bounded": true,
+        "eviction": "LRU/segmented LRU configurable",
+        "limits": {
+          "default_max_bytes": 268435456,
+          "per_repo_max_bytes": 268435456
+        }
+      },
+      "indices": [
+        {
+          "name": "CommitGraphCache",
+          "purpose": "Windowed commit graph + lane computation for fast graph rendering",
+          "invalidated_by": ["RefsChanged"]
+        },
+        {
+          "name": "TreeCache",
+          "purpose": "File tree snapshots keyed by TreeId for fast browsing",
+          "invalidated_by": ["HeadChanged", "Checkout"]
+        },
+        {
+          "name": "DiffCache",
+          "purpose": "Diff hunks/chunks for recently viewed commits/files",
+          "invalidated_by": ["WorkdirChanged", "IndexChanged", "HeadChanged"]
+        },
+        {
+          "name": "BlameCache",
+          "purpose": "Blame chunk caching for file+commit windows",
+          "invalidated_by": ["RefsChanged"]
+        }
+      ]
+    },
+    "testing_strategy": {
+      "unit_tests": [
+        "DTO serialization determinism (rl_api)",
+        "Engine query planning and pagination (rl_core)",
+        "Backend adapters with mocked stores (rl_git)"
+      ],
+      "integration_tests": [
+        "Golden comparisons vs git CLI for core queries",
+        "Mutation operations (commit/checkout/merge/rebase) on temp repos",
+        "Watch event correctness under scripted changes"
+      ],
+      "property_and_fuzz": [
+        "Random repo generator produces histories with merges/renames/conflicts",
+        "Query invariants: paging stability, id stability, deterministic ordering"
+      ],
+      "performance_tests": [
+        "Bench repos: tiny/medium/large; track p50/p95 latency",
+        "Memory/alloc tracking per query where feasible"
+      ]
+    },
+    "cli_contract": {
+      "binary": "repo-lens",
+      "output_modes": ["json", "pretty"],
+      "commands": [
+        "status",
+        "log",
+        "graph",
+        "show",
+        "diff-summary",
+        "diff",
+        "blame",
+        "branches",
+        "tags",
+        "remotes",
+        "checkout",
+        "commit",
+        "fetch",
+        "push",
+        "merge",
+        "rebase",
+        "stash",
+        "watch",
+        "bench"
+      ],
+      "global_flags": [
+        "--repo <path>",
+        "--json",
+        "--pretty",
+        "--page-size <n>",
+        "--cursor <cursor>",
+        "--timeout-ms <n>"
+      ]
+    },
+    "milestones": [
+      {
+        "name": "M0 - Scaffolding",
+        "deliverables": [
+          "Workspace + crates wired",
+          "rl_api v0 DTOs for Status/Log/Diff/Watch",
+          "repo-lens CLI prints deterministic JSON"
+        ]
+      },
+      {
+        "name": "M1 - Status + Watch",
+        "deliverables": [
+          "Fast status view",
+          "Watch event stream for refs/index/workdir",
+          "Golden tests against git"
+        ]
+      },
+      {
+        "name": "M2 - Log + Show + Graph window",
+        "deliverables": [
+          "Paged commit list",
+          "Commit details and changed files summary",
+          "Graph window lanes for a bounded range"
+        ]
+      },
+      {
+        "name": "M3 - Diff",
+        "deliverables": [
+          "Diff summary fast path",
+          "Streamed diff content",
+          "Diff cache and perf harness baselines"
+        ]
+      }
+    ],
+    "open_questions": [
+      "Primary git plumbing choice: gitoxide vs libgit2 vs subprocess (keep behind rl_git trait)",
+      "Initial IPC choice: JSON-RPC over stdio vs local socket (stdio recommended first)",
+      "How aggressively to index commit graph vs on-demand window computation"
+    ]
+  }
+  

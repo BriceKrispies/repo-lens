@@ -1,0 +1,25 @@
+[package]
+name = "rl_bench"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Bench harness for repo-lens with performance testing"
+
+[[bin]]
+name = "repo-lens-bench"
+path = "src/main.rs"
+
+[dependencies]
+rl_core = { path = "../rl_core" }
+rl_api = { path = "../rl_api" }
+rl_fixtures = { path = "../rl_fixtures" }
+criterion.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+futures = "0.3"
+toml = "0.8"
+clap.workspace = true
+chrono = { version = "0.4", features = ["serde"] }
+tokio.workspace = true

@@ -1,0 +1,22 @@
+[package]
+name = "rl_cli"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Thin CLI for repo-lens that maps subcommands to API requests"
+
+[[bin]]
+name = "repo-lens"
+path = "src/main.rs"
+
+[dependencies]
+rl_core = { path = "../rl_core" }
+rl_api = { path = "../rl_api" }
+rl_ipc = { path = "../rl_ipc" }
+clap.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+tokio.workspace = true

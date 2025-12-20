@@ -1,0 +1,19 @@
+[package]
+name = "rl_core"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Pure repo engine for repo-lens with query planning and caching coordination"
+
+[dependencies]
+rl_git = { path = "../rl_git" }
+rl_api = { path = "../rl_api" }
+rl_index = { path = "../rl_index" }
+serde.workspace = true
+thiserror.workspace = true
+tokio.workspace = true
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
+async-trait = "0.1"

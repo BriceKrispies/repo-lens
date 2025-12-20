@@ -1,0 +1,15 @@
+[package]
+name = "rl_git"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Git plumbing adapter layer for repo-lens"
+
+[dependencies]
+rl_api = { path = "../rl_api" }
+serde.workspace = true
+thiserror.workspace = true
+async-trait = "0.1"
+tokio.workspace = true

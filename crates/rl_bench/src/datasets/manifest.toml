@@ -1,0 +1,17 @@
+# Benchmark dataset manifest
+# Defines external repositories used for performance testing
+
+[[datasets]]
+name = "git"
+description = "The official Git repository - large, real-world codebase"
+url = "https://github.com/git/git.git"
+revision = "v2.45.0"  # Stable tag for reproducible benchmarks
+size_category = "large"  # ~300MB repo, ~1M commits
+
+# Future datasets can be added here
+# [[datasets]]
+# name = "linux"
+# description = "Linux kernel repository"
+# url = "https://github.com/torvalds/linux.git"
+# revision = "v6.6"
+# size_category = "huge"

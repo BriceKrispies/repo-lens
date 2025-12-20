@@ -1,0 +1,39 @@
+# Rust
+target/
+Cargo.lock
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Build artifacts
+*.o
+*.so
+*.dylib
+*.dll
+
+# Test coverage
+*.profraw
+coverage/
+
+# Benchmark results
+criterion/
+
+# Benchmark dataset cache
+target/rl_bench/
+
+# Temporary files
+*.tmp
+*.bak
+
+# Logs
+*.log
+
+# Documentation build
+book/

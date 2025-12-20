@@ -1,0 +1,14 @@
+[package]
+name = "rl_fixtures"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Test-only helpers for generating repos and edge cases"
+
+[lib]
+test = true
+
+[dependencies]
+serde.workspace = true
