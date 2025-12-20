@@ -198,7 +198,5 @@ mod tests {
         assert!(repo.path.join("dir/c.txt").exists(), "dir/c.txt should exist (renamed in C2)");
         assert!(repo.path.join("bin.dat").exists(), "bin.dat should exist");
         assert!(!repo.path.join("new.txt").exists(), "new.txt should not exist (deleted in C3)");
-
-        println!("Synthetic repo created at: {:?}", repo.path);
     }
 }
