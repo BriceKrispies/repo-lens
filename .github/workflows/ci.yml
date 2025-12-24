@@ -19,6 +19,9 @@ jobs:
       with:
         components: rustfmt, clippy
 
+    - name: Enable sparse registry
+      run: echo "CARGO_REGISTRIES_CRATES_IO_PROTOCOL=sparse" >> $GITHUB_ENV
+
     - name: Cache dependencies
       uses: Swatinem/rust-cache@v2
 
@@ -34,9 +37,6 @@ jobs:
     - name: Run tests
       run: cargo test --workspace
 
-    - name: Run fast benchmarks
-      run: cargo bench --workspace -- --measurement-time 1 --sample-size 10
-
   windows:
     runs-on: windows-latest
 
@@ -46,6 +46,9 @@ jobs:
 
     - name: Install Rust
       uses: dtolnay/rust-toolchain@stable
+
+    - name: Enable sparse registry
+      run: echo "CARGO_REGISTRIES_CRATES_IO_PROTOCOL=sparse" >> $env:GITHUB_ENV
 
     - name: Cache dependencies
       uses: Swatinem/rust-cache@v2
