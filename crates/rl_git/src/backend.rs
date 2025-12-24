@@ -92,7 +92,11 @@ impl RepoHandle for CliRepoHandle {
         // Get HEAD commit
         let head_output = self.run_git(&["rev-parse", "HEAD"]).await?;
         let head = if head_output.status.success() {
-            Some(String::from_utf8_lossy(&head_output.stdout).trim().to_string())
+            Some(
+                String::from_utf8_lossy(&head_output.stdout)
+                    .trim()
+                    .to_string(),
+            )
         } else {
             None
         };
@@ -100,7 +104,9 @@ impl RepoHandle for CliRepoHandle {
         // Get current branch
         let branch_output = self.run_git(&["rev-parse", "--abbrev-ref", "HEAD"]).await?;
         let branch = if branch_output.status.success() {
-            let branch_name = String::from_utf8_lossy(&branch_output.stdout).trim().to_string();
+            let branch_name = String::from_utf8_lossy(&branch_output.stdout)
+                .trim()
+                .to_string();
             if branch_name != "HEAD" {
                 Some(branch_name)
             } else {
@@ -242,7 +248,10 @@ fn parse_status_porcelain(output: &[u8]) -> Result<crate::WorkdirStatus> {
     let mut untracked = Vec::new();
 
     // Split on null bytes
-    let entries: Vec<&[u8]> = output.split(|&b| b == 0).filter(|e| !e.is_empty()).collect();
+    let entries: Vec<&[u8]> = output
+        .split(|&b| b == 0)
+        .filter(|e| !e.is_empty())
+        .collect();
 
     let mut i = 0;
     while i < entries.len() {

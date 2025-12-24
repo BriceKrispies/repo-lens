@@ -245,14 +245,17 @@ impl RepoEngine {
         let repo_path = Path::new(&req.repo_path);
 
         // Step 1: Open the repository
-        let repo_handle = step!("git_open_repo", { self.git_backend.open_repo(repo_path).await })?;
+        let repo_handle = step!("git_open_repo", {
+            self.git_backend.open_repo(repo_path).await
+        })?;
 
         // Step 2: Get repository snapshot (HEAD, branch)
         let snapshot = step!("git_snapshot", { repo_handle.snapshot().await })?;
 
         // Step 3: Get working directory status (runs git status --porcelain=v1)
-        let workdir_status =
-            step!("git_status_porcelain", { repo_handle.workdir().status().await })?;
+        let workdir_status = step!("git_status_porcelain", {
+            repo_handle.workdir().status().await
+        })?;
 
         // Step 4: Build response
         let response = step!("build_response", {
@@ -316,7 +319,9 @@ impl RepoEngine {
 
         let repo_path = Path::new(&req.repo_path);
 
-        let repo_handle = step!("git_open_repo", { self.git_backend.open_repo(repo_path).await })?;
+        let repo_handle = step!("git_open_repo", {
+            self.git_backend.open_repo(repo_path).await
+        })?;
 
         let from = req.from.as_deref().unwrap_or("HEAD");
         let to = req.to.as_deref().unwrap_or("");
@@ -326,11 +331,13 @@ impl RepoEngine {
             format!("{}..{}", from, to)
         };
 
-        let name_status_output =
-            step!("git_diff_name_status", { repo_handle.diff_name_status(&range).await })?;
+        let name_status_output = step!("git_diff_name_status", {
+            repo_handle.diff_name_status(&range).await
+        })?;
 
-        let numstat_output =
-            step!("git_diff_numstat", { repo_handle.diff_numstat(&range).await })?;
+        let numstat_output = step!("git_diff_numstat", {
+            repo_handle.diff_numstat(&range).await
+        })?;
 
         let response = step!("parse_diff", {
             parse_diff_summary(&name_status_output, &numstat_output)

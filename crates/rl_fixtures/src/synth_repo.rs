@@ -193,10 +193,19 @@ mod tests {
     fn test_synth_repo_creation() {
         let repo = SynthRepo::ensure("test_basic").expect("Failed to create synthetic repo");
         assert!(repo.path.exists(), "Repo path should exist");
-        assert!(repo.path.join(".git").exists(), "Git directory should exist");
+        assert!(
+            repo.path.join(".git").exists(),
+            "Git directory should exist"
+        );
         assert!(repo.path.join("a.txt").exists(), "a.txt should exist");
-        assert!(repo.path.join("dir/c.txt").exists(), "dir/c.txt should exist (renamed in C2)");
+        assert!(
+            repo.path.join("dir/c.txt").exists(),
+            "dir/c.txt should exist (renamed in C2)"
+        );
         assert!(repo.path.join("bin.dat").exists(), "bin.dat should exist");
-        assert!(!repo.path.join("new.txt").exists(), "new.txt should not exist (deleted in C3)");
+        assert!(
+            !repo.path.join("new.txt").exists(),
+            "new.txt should not exist (deleted in C3)"
+        );
     }
 }

@@ -119,7 +119,10 @@ mod tests {
             }
             Err(diff) => {
                 eprintln!("Oracle status test FAILED");
-                eprintln!("Expected {} lines, got {}", diff.expected_len, diff.actual_len);
+                eprintln!(
+                    "Expected {} lines, got {}",
+                    diff.expected_len, diff.actual_len
+                );
                 if let Some(idx) = diff.first_mismatch {
                     eprintln!("First mismatch at line {}", idx);
                 }
@@ -210,7 +213,10 @@ mod tests {
             }
             Err(diff) => {
                 eprintln!("Oracle diff C0..C1 test FAILED");
-                eprintln!("Expected {} lines, got {}", diff.expected_len, diff.actual_len);
+                eprintln!(
+                    "Expected {} lines, got {}",
+                    diff.expected_len, diff.actual_len
+                );
                 panic!("Oracle comparison failed");
             }
         }
